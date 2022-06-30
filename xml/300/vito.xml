@@ -1748,5 +1748,28 @@
         <unit>UT1</unit>
       </device>
     </command>
+    <command name="getEntlueftBefuell" protocmd="getaddr">
+      <description>Ermittle den Status Entlueftung/Befuellung</description>
+      <device ID="20CB">
+        <addr>572F</addr>
+        <len>1</len>
+        <unit>EBP</unit>
+      </device>
+    </command>
+    <command name="setEntlueftBefuell" protocmd="setaddr">
+      <description>Setze Entlueftung oder Befuellung</description>
+      <device ID="20CB">
+        <addr>572F</addr>
+        <len>1</len>
+        <unit>EBP</unit>
+      </device>
+    </command>
+    <command name="get7700" protocmd="getaddr">
+      <description>Test</description>
+      <device ID="20CB">
+        <addr>7700</addr>
+        <len>1</len>
+      </device>
+    </command>
   </commands>
 </vito>

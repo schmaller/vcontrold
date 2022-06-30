@@ -9,14 +9,14 @@
       <username>nobody</username>
       <groupname>dialout</groupname>
       <serial>
-        <tty>/dev/ttySAC1</tty>
+        <tty>/dev/ttyUSB0</tty>
       </serial>
       <net>
         <port>3002</port>
       </net>
       <logging>
-        <file>vcontrold.log</file>
-        <syslog>n</syslog>
+       <!--  <file>vcontrold.log</file> -->
+        <syslog>y</syslog>
         <debug>n</debug>
       </logging>
       <device ID="20CB"/>
@@ -251,6 +251,13 @@
       <enum bytes="08" text="Brennerstoerung 09"/>
       <enum bytes="0A" text="Brennerstoerung 10"/>
       <enum text="UNKNOWN"/>
+    </unit>
+    <unit name="EntlueftBefuell">
+      <abbrev>EBP</abbrev>
+      <type>enum</type>
+      <enum bytes="00" text="NA"/>
+      <enum bytes="01" text="Entlueftung"/>
+      <enum bytes="02" text="Befuellung"/>
     </unit>
     <unit name="Bitstatus">
       <abbrev>BST</abbrev>
