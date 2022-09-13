@@ -12,12 +12,12 @@ _CYCLE_ON_TIME=60
 _CYCLE_OFF_TIME=10 
 _CYCLE_DB_TIME=600
 _MIN_ON_WW_TEMP_IST=48
-_MIN_ON_K_TEMP_DIFF=2
+_MIN_ON_K_TEMP_DIFF=1
 _MAX_OFF_K_TEMP_DIFF=15
 _MIN_ON_REPEAT=10*60
 _MAX_ON_TEMP_A=21
 _MIN_BEFUELL_DURATION=30
-_MAX_BEFUELL_DURATION=120
+_MAX_BEFUELL_DURATION=150
 
 syslog.openlog(ident='vito_watcher', logoption=syslog.LOG_PID, facility=syslog.LOG_DAEMON)
 db = TinyDB('/home/pi/vclient_db.json')
@@ -29,7 +29,7 @@ kSoll=0
 
 def readValues():
       global writtenTs,db
-      sData = subprocess.check_output(['/usr/bin/vclient', '-t', '/etc/vcontrold/json.tmpl', '-c',  'getTempA,getTempKsoll,getTempKist,getTempWWist,getEntlueftBefuell,getUmschaltventil,getBetriebArt,getBrennerStarts'])
+      sData = subprocess.check_output(['/usr/bin/vclient', '-t', '/etc/vcontrold/json.tmpl', '-c',  'getTempA,getTempKsoll,getTempKist,getTempWWist,getEntlueftBefuell,getUmschaltventil,getBetriebArt,getBrennerStarts,getTempVLsollM2'])
       jData = json.loads(sData)
       jData['ts'] = str(datetime.datetime.now())
       now=time.time()
@@ -37,7 +37,7 @@ def readValues():
       if now - writtenTs > _CYCLE_DB_TIME:
             db.insert(jData)
             writtenTs=now
-      print('Current values: TempKsoll=' + jData['getTempKsoll'] + ', TempKist=' + jData['getTempKist'] +', TempA=' + jData['getTempA'] + ' - ' + jData['ts'])
+      print('Current values: TempKsoll=' + jData['getTempKsoll'] + ', TempKist=' + jData['getTempKist'] +', TempA=' + jData['getTempA'] + ', TempVLsoll=' + jData['getTempVLsollM2'] + ', BrennerStarts=' + jData['getBrennerStarts'] + ' - ' + jData['ts'])
       return jData
 
 def befuellung():
