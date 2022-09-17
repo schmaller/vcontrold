@@ -1,0 +1,55 @@
+name: "CodeQL"
+
+on:
+  push:
+  #  branches: [ "master", "main" ]
+  pull_request:
+  #  # The branches below must be a subset of the branches above
+  #  branches: [ "master", "main" ]
+  #schedule:
+  #  - cron: '15 20 * * 2'
+  workflow_dispatch:
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'cpp' ]
+        # CodeQL supports [ 'cpp', 'csharp', 'go', 'java', 'javascript', 'python', 'ruby' ]
+        # Learn more about CodeQL language support at https://aka.ms/codeql-docs/language-support
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Hack around https://github.com/actions/checkout/issues/290
+      run: |
+        git fetch --tags --force
+
+    - name: Installing needed dependencies
+      run: |
+          sudo apt-get install -y -qq libxml2-dev python3-docutils
+
+    # Initializes the CodeQL tools for scanning.
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v2
+      with:
+        languages: ${{ matrix.language }}
+
+    - name: Build Application
+      run: |
+        mkdir build
+        cmake -S . -B build -DVSIM=ON -DMANPAGES=ON -DCMAKE_VERBOSE_MAKEFILE=ON
+        cmake --build build
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
