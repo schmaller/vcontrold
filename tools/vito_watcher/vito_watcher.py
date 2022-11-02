@@ -11,13 +11,14 @@ import subprocess
 _CYCLE_ON_TIME=60
 _CYCLE_OFF_TIME=10 
 _CYCLE_DB_TIME=600
-_MIN_ON_WW_TEMP_IST=48
-_MIN_ON_K_TEMP_DIFF=1
+_MIN_ON_WW_TEMP_IST=30
+_MIN_ON_K_TEMP_DIFF=2
+_MIN_ON_WW_TEMP_DIFF=4
 _MAX_OFF_K_TEMP_DIFF=15
-_MIN_ON_REPEAT=10*60
+_MIN_ON_REPEAT=6*60
 _MAX_ON_TEMP_A=21
 _MIN_BEFUELL_DURATION=30
-_MAX_BEFUELL_DURATION=150
+_MAX_BEFUELL_DURATION=150 
 
 syslog.openlog(ident='vito_watcher', logoption=syslog.LOG_PID, facility=syslog.LOG_DAEMON)
 db = TinyDB('/home/pi/vclient_db.json')
@@ -29,7 +30,24 @@ kSoll=0
 
 def readValues():
       global writtenTs,db
-      sData = subprocess.check_output(['/usr/bin/vclient', '-t', '/etc/vcontrold/json.tmpl', '-c',  'getTempA,getTempKsoll,getTempKist,getTempWWist,getEntlueftBefuell,getUmschaltventil,getBetriebArt,getBrennerStarts,getTempVLsollM2'])
+      retry = 3
+
+      while True:
+         retry = retry - 1
+         try:
+            sData = subprocess.check_output(['/usr/bin/vclient', '-t', '/etc/vcontrold/json.tmpl', '-c',  'getTempA,getTempKsoll,getTempKist,getTempWWist,getEntlueftBefuell,getUmschaltventil,getBetriebArt,getBrennerStarts,getTempVLsollM2'], 
+                                            text=True, stderr=subprocess.STDOUT)
+            if 'SRV ERR' in sData:
+               print('Error occured: ' + sData[0:50] + '...')
+            else:
+               break
+         except subprocess.CalledProcessError as e:
+            print('Error calling vclient:')
+            print(e)
+         if retry < 1:
+            break   
+         time.sleep(5)
+
       jData = json.loads(sData)
       jData['ts'] = str(datetime.datetime.now())
       now=time.time()
@@ -37,7 +55,8 @@ def readValues():
       if now - writtenTs > _CYCLE_DB_TIME:
             db.insert(jData)
             writtenTs=now
-      print('Current values: TempKsoll=' + jData['getTempKsoll'] + ', TempKist=' + jData['getTempKist'] +', TempA=' + jData['getTempA'] + ', TempVLsoll=' + jData['getTempVLsollM2'] + ', BrennerStarts=' + jData['getBrennerStarts'] + ' - ' + jData['ts'])
+      print('Current values: TempKsoll=' + jData['getTempKsoll'] + ', TempKist='   + jData['getTempKist'] +     ', TempWWist='     + jData['getTempWWist'] +
+                          ', TempA='     + jData['getTempA'] +     ', TempVLsoll=' + jData['getTempVLsollM2'] + ', BrennerStarts=' + jData['getBrennerStarts'] + ' - ' + jData['ts'])
       return jData
 
 def befuellung():
@@ -69,9 +88,9 @@ while True:
    if float(jData['getTempWWist']) >= _MIN_ON_WW_TEMP_IST and \
       float(jData['getTempA']) <= _MAX_ON_TEMP_A and \
       float(jData['getTempKsoll']) - float(jData['getTempKist']) >= _MIN_ON_K_TEMP_DIFF and \
+      float(jData['getTempWWist']) - float(jData['getTempKist']) >= _MIN_ON_WW_TEMP_DIFF and \
       jData['getUmschaltventil'] == 'Heizen' and \
       time.time() - startBefuellung >= _MIN_ON_REPEAT:
-#   if float(jData['getTempWWist']) >= _MIN_ON_WW_TEMP_IST:
 
       syslog.syslog('Start Befuellung : ' + str(jData))
       kSoll = float(jData['getTempKsoll'])

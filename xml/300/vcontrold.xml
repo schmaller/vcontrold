@@ -13,7 +13,7 @@
       </serial>
       <net>
         <!-- if no address is given, daemon will listen on all found interfaces -->
-        <!-- <listen>localhost</listen> -->
+	<listen>localhost</listen>
         <port>3002</port>
       </net>
       <logging>
