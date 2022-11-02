@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Heizung@Home über RasPi2</title>
+    <style>
+      body {
+        margin: 10px;
+      }
+      .gridboxes {
+        display: grid;
+        grid-gap: 20px;
+        grid-template-columns: 150px 150px;
+        grid-template-rows:    150px 150px 150px 150px;
+        font-family: Verdana, sans-serif;
+        font-size: 48px;
+        text-align: center;
+      }
+      .grid2buttons {
+        display: grid;
+        grid-gap: 5px;
+        grid-template-columns: 150px;
+        grid-template-rows:    50% 50%;
+        text-align: center;
+       }
+      .datatempa {
+        vertical-align: middle;
+        background-color: LightCyan;
+        background-image: url("{{url_for('static',filename='icons8-outdoor-64.png')}}");
+        background-size: cover;
+      }
+      .datatempww {
+        vertical-align: middle;
+        background-color: NavajoWhite;
+        background-image: url("{{url_for('static',filename='icons8-water-tap-64.png')}}");
+        background-size: cover;
+      }
+      .datatempraum {
+        vertical-align: middle;
+        background-color: PaleGreen;
+        background-image: url("{{url_for('static',filename='icons8-home-64.png')}}"), url("{{url_for('static',filename='icons8-sun-50.png')}}") ;
+        background-size: cover, 40%;
+        background-repeat: no-repeat, no-repeat;
+        background-position: center center, left top ;
+      }
+      .datatempraumred {
+        vertical-align: middle;
+        background-color: Aquamarine;
+        background-image: url("{{url_for('static',filename='icons8-home-64.png')}}"), url("{{url_for('static',filename='icons8-moon-64.png')}}") ;
+        background-size: cover, 40%;
+        background-repeat: no-repeat, no-repeat;
+        background-position: center center, right top ;
+      }
+      .databrenner {
+        display: grid;
+        grid-gap: 10px;
+        grid-template-columns: 150px;
+        grid-template-rows:    30% 30%;
+        grid-gap: 40%;
+        text-align: center;
+        vertical-align: middle;
+        font-size: 33px;
+        background-color: white;
+        {% if data['getBrennerStatus'] > 5 %}
+        background-image: url("{{url_for('static',filename='icons8-fire-color.png')}}");
+        {% else %}
+        background-image: url("{{url_for('static',filename='icons8-fire-grey.png')}}");
+        {% endif %}
+        background-size: 60%;
+        background-repeat: no-repeat;
+        background-position: center center;
+      }
+    </style>
+  </head>
+  <body>
+  <script language="javascript">
+    function confirm_send(info, call, parm) {
+      if (confirm("Bitte bestätigen:\n  " + info) == true) {
+        var f = document.forms['form1']
+        f.call.value = call
+        f.parm.value = parm
+        f.submit()
+      }
+    }
+  </script>
+  {% if data.get('msg') %}
+    <h3>{{ data.get('msg') }}</h3>
+  {% endif %}
+  <div style="width: 100%"><span style="float: left"><a href="/">Neu laden</a></span><span style="float: right">Letzter Aufruf: {{ data.get('time') }}</span></div>
+  <hr style="clear: both"/>
+  <form action="/" method="post" id="form1">
+    <input type="hidden" name="call"/>
+    <input type="hidden" name="parm"/>
+    <div class="gridboxes">
+      <div class="datatempa"><p>{{ "{:.1f}".format(data['getTempA']) }}&deg;</p></div>
+      <div class="databrenner">
+        <div>{{ "{:,.0f}".format(data['getBrennerStarts']).replace(',', '.') }}</div>
+        <div>{{ "{:.0f}%".format(data['getBrennerStatus']) }}</div>
+      </div>
+      <div class="datatempww"><p>{{ "{:.1f}".format(data['getTempWWist']) }}&deg;</p></div>
+      <div class="grid2buttons">
+        <div><input type="image" src="{{url_for('static',filename='icons8-up-red.png')}}"    onClick="javascript:confirm_send('heißes Wasser machen (Rückmeldung in ca. 1 Minute)', 'heat', 'hot' ); return; "/></div>
+        <div><input type="image" src="{{url_for('static',filename='icons8-up-orange.png')}}" onClick="javascript:confirm_send('warmes Wasser machen (Rückmeldung in ca. 1 Minute)', 'heat', 'warm'); return; "/></div>
+      </div>
+      <div class="datatempraum"><p>{{ "{:.0f}".format(data['getTempRaumNorSollM2']) }}&deg;</p></div>
+      <div class="grid2buttons">
+        <div><input type="image" src="{{url_for('static',filename='icons8-up-warm_green.png')}}"   onClick="javascript:confirm_send('normale Raumtemperatur erhöhen', 'set_norm', 'up' ); return; "/></div>
+        <div><input type="image" src="{{url_for('static',filename='icons8-down-cold_green.png')}}" onClick="javascript:confirm_send('normale Raumtemperatur senken', 'set_norm', 'down'); return; "/></div>
+      </div>
+      <div class="datatempraumred"><p>{{ "{:.0f}".format(data['getTempRaumRedSollM2']) }}&deg;</p></div>
+      <div class="grid2buttons">
+        <div><input type="image" src="{{url_for('static',filename='icons8-up-warm_green.png')}}"   onClick="javascript:confirm_send('reduzierte Raumtemperatur erhöhen', 'set_red', 'up' ); return; "/></div>
+        <div><input type="image" src="{{url_for('static',filename='icons8-down-cold_green.png')}}" onClick="javascript:confirm_send('reduzierte Raumtemperatur senken', 'set_red', 'down'); return; "/></div>
+      </div>
+    </div>
+  </form>
+  <hr/>
+  Thanks to <a href="https://icons8.com">icons8</a> for providing these free icons.
+  </body>
+</html>
