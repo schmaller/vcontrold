@@ -11,7 +11,7 @@ import subprocess
 _CYCLE_ON_TIME=60
 _CYCLE_OFF_TIME=10 
 _CYCLE_DB_TIME=600
-_MIN_ON_WW_TEMP_IST=30
+_MIN_ON_WW_TEMP_IST=34
 _MIN_ON_K_TEMP_DIFF=2
 _MIN_ON_WW_TEMP_DIFF=4
 _MAX_OFF_K_TEMP_DIFF=15
@@ -27,15 +27,29 @@ db = TinyDB('/home/pi/vclient_db.json')
 writtenTs=0
 startBefuellung=0
 kSoll=0
+jData = {}
 
 def readValues():
-      global writtenTs,db
+      global writtenTs,db,jData
       retry = 3
 
       while True:
          retry = retry - 1
+
+         # full or reduced data request
+         now=time.time()
+         if now - writtenTs > _CYCLE_DB_TIME:
+            writeIt = True
+            extraValues = ',getTempA,getTempWWist,getBrennerStarts,getTempVLsollM2,getBrennerStunden1'
+            tmpl = 'json_long.tmpl'
+            writtenTs = now
+         else:
+            writeIt = False
+            extraValues = ''
+            tmpl = 'json.tmpl'
+
          try:
-            sData = subprocess.check_output(['/usr/bin/vclient', '-t', '/etc/vcontrold/json.tmpl', '-c',  'getTempA,getTempKsoll,getTempKist,getTempWWist,getEntlueftBefuell,getUmschaltventil,getBetriebArt,getBrennerStarts,getTempVLsollM2'], 
+            sData = subprocess.check_output(['/usr/bin/vclient', '-t', '/etc/vcontrold/'+tmpl, '-c',  'getTempKsoll,getTempKist,getUmschaltventil,getBetriebArt'+extraValues], 
                                             text=True, stderr=subprocess.STDOUT)
             if 'SRV ERR' in sData:
                print('Error occured: ' + sData[0:50] + '...')
@@ -48,27 +62,28 @@ def readValues():
             break   
          time.sleep(5)
 
-      jData = json.loads(sData)
+      jData.update(json.loads(sData))
       jData['ts'] = str(datetime.datetime.now())
-      now=time.time()
+
       # write to db every n seconds
-      if now - writtenTs > _CYCLE_DB_TIME:
-            db.insert(jData)
-            writtenTs=now
-      print('Current values: TempKsoll=' + jData['getTempKsoll'] + ', TempKist='   + jData['getTempKist'] +     ', TempWWist='     + jData['getTempWWist'] +
-                          ', TempA='     + jData['getTempA'] +     ', TempVLsoll=' + jData['getTempVLsollM2'] + ', BrennerStarts=' + jData['getBrennerStarts'] + ' - ' + jData['ts'])
-      return jData
+      if writeIt:
+         db.insert(jData)
+   
+      print(', '.join(k+'='+jData[k] for k in jData))
+      
+      return
 
 def befuellung():
    global startBefuellung
    global kSoll
+   global jData
 
    out = subprocess.check_output(['/usr/bin/vclient', '-c', 'setEntlueftBefuell Befuellung'])
    startBefuellung=time.time()
       
    while True:
       time.sleep(_CYCLE_OFF_TIME)
-      jData = readValues()
+      readValues()
       now = time.time()
       if now - startBefuellung >= _MIN_BEFUELL_DURATION and ( \
          now - startBefuellung >= _MAX_BEFUELL_DURATION or \
@@ -82,7 +97,7 @@ def befuellung():
 ## MAIN
 while True:
 
-   jData = readValues()
+   readValues()
 
    # check conditions for "Befuellung"
    if float(jData['getTempWWist']) >= _MIN_ON_WW_TEMP_IST and \
