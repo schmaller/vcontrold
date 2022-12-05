@@ -2,6 +2,7 @@
 <html>
   <head>
     <title>Heizung@Home über RasPi2</title>
+    <link rel="icon" href="/static/icons8-fire-color.png" type="image/png">
     <style>
       body {
         margin: 10px;
@@ -98,8 +99,8 @@
       </div>
       <div class="datatempww"><p>{{ "{:.1f}".format(data['getTempWWist']) }}&deg;</p></div>
       <div class="grid2buttons">
-        <div><input type="image" src="{{url_for('static',filename='icons8-up-red.png')}}"    onClick="javascript:confirm_send('heißes Wasser machen (Rückmeldung in ca. 1 Minute)', 'heat', 'hot' ); return; "/></div>
-        <div><input type="image" src="{{url_for('static',filename='icons8-up-orange.png')}}" onClick="javascript:confirm_send('warmes Wasser machen (Rückmeldung in ca. 1 Minute)', 'heat', 'warm'); return; "/></div>
+        <div><input type="image" src="{{url_for('static',filename='icons8-up-red.png')}}"    onClick="javascript:confirm_send('heißes Wasser machen\n   (Rückmeldung in ca. 1 Minute)\nLetzte 60° Erhitzung: {{ data['last60'] }}', 'heat', 'hot' ); return; "/></div>
+        <div><input type="image" src="{{url_for('static',filename='icons8-up-orange.png')}}" onClick="javascript:confirm_send('warmes Wasser machen\n   (Rückmeldung in ca. 1 Minute)\nLetzte 60° Erhitzung: {{ data['last60'] }}', 'heat', 'warm'); return; "/></div>
       </div>
       <div class="datatempraum"><p>{{ "{:.0f}".format(data['getTempRaumNorSollM2']) }}&deg;</p></div>
       <div class="grid2buttons">

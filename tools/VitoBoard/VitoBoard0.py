@@ -1,8 +1,10 @@
 from flask import Flask,render_template,request,redirect,url_for
+
+import os
 import subprocess
 import json
 from datetime import datetime
-from time import strftime,localtime,mktime,sleep
+from time import strftime,localtime,mktime,sleep,time
 
 WW_TEMP=[42,60]    # warm and hot
 WEEKDAYS=['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
@@ -42,6 +44,7 @@ def getTemps():
       
    data = json.loads(sData)
    data['time'] = strftime("%Y-%m-%d %H:%M", localtime())
+   data['last60'] = readLast60()
    return data
 
 # change the Soll temperatures by one step
@@ -97,9 +100,30 @@ def makeItHot(temp):
    sData = subprocess.check_output(['/usr/bin/vclient', '-c', 'setTimerWW'+weekday + ' -- --'], text=True, stderr=subprocess.STDOUT)
    if 'SRV ERR' in sData:
       raise Exception('Error calling vclient resetting WW timer: ' + sData)
+
+# Ermittelt 1x täglich den Zeitpunkt der letzten WW Erhitzung auf min. 60°
+def readLast60():
+   file='/tmp/last60'
+   fst=None
+
+   try:
+      fst=os.stat(file)
+   except:
+      pass
+
+   if fst == None or fst.st_mtime < time() - 60*60*24:
+      with open(file, mode='w') as fd:
+         subprocess.run(['jq', '[._default[] | select(.getTempWWist>"60.00000")][-1]', '/home/pi/vclient_db.json'], stdout=fd)
+    
+   data=None
+   with open(file) as fd:
+      data=json.load(fd)
+
+   return data.get('ts')[0:16]
    
 
 ''' MAIN '''
 if __name__ == "__main__":
    # makeItHot()
    app.run()
+
