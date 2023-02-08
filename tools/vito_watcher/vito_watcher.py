@@ -9,16 +9,16 @@ import json
 import subprocess
 
 _CYCLE_ON_TIME=60
-_CYCLE_OFF_TIME=10 
+_CYCLE_OFF_TIME=20
 _CYCLE_DB_TIME=600
 _MIN_ON_WW_TEMP_IST=34
-_MIN_ON_K_TEMP_DIFF=2
+_MIN_ON_K_TEMP_DIFF=1
 _MIN_ON_WW_TEMP_DIFF=4
 _MAX_OFF_K_TEMP_DIFF=15
-_MIN_ON_REPEAT=6*60
+_MIN_ON_REPEAT=5*60
 _MAX_ON_TEMP_A=21
 _MIN_BEFUELL_DURATION=30
-_MAX_BEFUELL_DURATION=150 
+_MAX_BEFUELL_DURATION=60*20
 
 syslog.openlog(ident='vito_watcher', logoption=syslog.LOG_PID, facility=syslog.LOG_DAEMON)
 db = TinyDB('/home/pi/vclient_db.json')
@@ -40,7 +40,7 @@ def readValues():
          now=time.time()
          if now - writtenTs > _CYCLE_DB_TIME:
             writeIt = True
-            extraValues = ',getTempA,getTempWWist,getBrennerStarts,getTempVLsollM2,getBrennerStunden1'
+            extraValues = ',getTempA,getBrennerStarts,getTempVLsollM2,getBrennerStunden1'
             tmpl = 'json_long.tmpl'
             writtenTs = now
          else:
@@ -49,7 +49,7 @@ def readValues():
             tmpl = 'json.tmpl'
 
          try:
-            sData = subprocess.check_output(['/usr/bin/vclient', '-t', '/etc/vcontrold/'+tmpl, '-c',  'getTempKsoll,getTempKist,getUmschaltventil,getBetriebArt'+extraValues], 
+            sData = subprocess.check_output(['/usr/bin/vclient', '-t', '/etc/vcontrold/'+tmpl, '-c',  'getTempKsoll,getTempKist,getUmschaltventil,getBetriebArt,getTempWWist'+extraValues], 
                                             text=True, stderr=subprocess.STDOUT)
             if 'SRV ERR' in sData:
                print('Error occured: ' + sData[0:50] + '...')
@@ -85,11 +85,13 @@ def befuellung():
       time.sleep(_CYCLE_OFF_TIME)
       readValues()
       now = time.time()
-      if now - startBefuellung >= _MIN_BEFUELL_DURATION and ( \
-         now - startBefuellung >= _MAX_BEFUELL_DURATION or \
-         float(jData['getTempKist']) - kSoll >= _MAX_OFF_K_TEMP_DIFF):
-#      if now - startBefuellung >= _MIN_BEFUELL_DURATION:
+      if now - startBefuellung >= _MIN_BEFUELL_DURATION and (         # min. Laufzeit erreicht && \
+         now - startBefuellung >= _MAX_BEFUELL_DURATION or               # max. Laufzeit erreicht || \
+         float(jData['getTempWWist']) < _MIN_ON_WW_TEMP_IST or           # min. WW-Temp unterschritten || \
+         float(jData['getTempKist']) - kSoll >= _MAX_OFF_K_TEMP_DIFF or  # K-Soll erreicht und überschritten || \
+         jData['getUmschaltventil'] == 'Heizen' ):                       # Steuerung hat Heizen aktiviert 
          break
+      pass
       
    out = subprocess.check_output(['/usr/bin/vclient', '-c', 'setEntlueftBefuell NA'])
    syslog.syslog('Ende Befuellung : ' + str(jData))
@@ -112,6 +114,4 @@ while True:
       befuellung()
       
    time.sleep(_CYCLE_ON_TIME)
-
-
       
