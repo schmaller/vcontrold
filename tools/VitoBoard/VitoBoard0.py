@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from flask import Flask,render_template,request,redirect,url_for
 
 import os
@@ -126,4 +127,3 @@ def readLast60():
 if __name__ == "__main__":
    # makeItHot()
    app.run()
-
