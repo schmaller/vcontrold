@@ -67,6 +67,7 @@ def readValues():
 
       # write to db every n seconds
       if writeIt:
+         db = TinyDB('/home/pi/vclient_db.json')
          db.insert(jData)
    
       print(', '.join(k+'='+jData[k] for k in jData))

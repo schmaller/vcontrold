@@ -118,9 +118,12 @@ def readLast60():
     
    data=None
    with open(file) as fd:
-      data=json.load(fd)
+      try:
+         data=json.load(fd)
+      except:
+         data=None
 
-   return data.get('ts')[0:16]
+   return data.get('ts')[0:16] if data else '1970-01-01 00:00:00.000000'
    
 
 ''' MAIN '''
