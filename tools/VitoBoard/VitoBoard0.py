@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from flask import Flask,render_template,request,redirect,url_for
-
+from json2html import *
 import os
 import subprocess
 import json
@@ -26,6 +26,19 @@ def main():
        setRaumTemp(request.form.get('call'), request.form.get('parm'), data)
 
     data.update(getTemps())
+    
+    # read last entry from vclient_db.json file
+    try:
+      sData = subprocess.check_output(['/usr/bin/jq', '[._default[]][-1:][]', '/home/pi/vclient_db.json'], text=True, stderr=subprocess.STDOUT)
+      if 'SRV ERR' in sData:
+         print('Error occured: ' + sData[0:50] + '...')
+    except subprocess.CalledProcessError as e:
+      print('Error calling jq:')
+      print(e)
+
+    data['vclient'] = json2html.convert(json=sData, clubbing='off')
+    
+    # render page
     return render_template('main.html', data=data)
                             
 @app.route("/test")

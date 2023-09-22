@@ -78,10 +78,18 @@ def befuellung():
    global startBefuellung
    global kSoll
    global jData
+   global db
 
    out = subprocess.check_output(['/usr/bin/vclient', '-c', 'setEntlueftBefuell Befuellung'])
    startBefuellung=time.time()
       
+   # Schreiben mit Umschaltventil=Mittelstellung
+   umschaltAlt=jData['getUmschaltventil']
+   jData['getUmschaltventil'] = 'Mittelstellung'
+   jData['ts'] = str(datetime.datetime.now())
+   db = TinyDB('/home/pi/vclient_db.json')
+   db.insert(jData)
+
    while True:
       time.sleep(_CYCLE_OFF_TIME)
       readValues()
@@ -96,6 +104,12 @@ def befuellung():
       
    out = subprocess.check_output(['/usr/bin/vclient', '-c', 'setEntlueftBefuell NA'])
    syslog.syslog('Ende Befuellung : ' + str(jData))
+
+   # Ende schreiben mit alter Stellung
+   jData['getUmschaltventil'] = umschaltAlt
+   jData['ts'] = str(datetime.datetime.now())
+   db = TinyDB('/home/pi/vclient_db.json')
+   db.insert(jData)
    
 ## MAIN
 while True:
