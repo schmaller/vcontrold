@@ -8,11 +8,11 @@ import syslog
 import json
 import subprocess
 
-_CYCLE_ON_TIME=60
+_CYCLE_ON_TIME=90
 _CYCLE_OFF_TIME=20
 _CYCLE_DB_TIME=600
 _MIN_ON_WW_TEMP_IST=34
-_MIN_ON_K_TEMP_DIFF=1
+_MIN_ON_K_TEMP_DIFF=0.5
 _MIN_ON_WW_TEMP_DIFF=4
 _MAX_OFF_K_TEMP_DIFF=15
 _MIN_ON_REPEAT=5*60
@@ -114,16 +114,19 @@ def befuellung():
 ## MAIN
 while True:
 
+   earlyStart=datetime.time(5,45)
+   earlyEnd=datetime.time(5,55)
+   
    readValues()
 
    # check conditions for "Befuellung"
-   if float(jData['getTempWWist']) >= _MIN_ON_WW_TEMP_IST and \
-      float(jData['getTempA']) <= _MAX_ON_TEMP_A and \
-      float(jData['getTempKsoll']) - float(jData['getTempKist']) >= _MIN_ON_K_TEMP_DIFF and \
-      float(jData['getTempWWist']) - float(jData['getTempKist']) >= _MIN_ON_WW_TEMP_DIFF and \
-      jData['getUmschaltventil'] == 'Heizen' and \
-      time.time() - startBefuellung >= _MIN_ON_REPEAT:
-
+   if ( float(jData['getTempWWist']) >= _MIN_ON_WW_TEMP_IST and                                   # overall conditions
+        float(jData['getTempA']) <= _MAX_ON_TEMP_A and
+        float(jData['getTempWWist']) - float(jData['getTempKist']) >= _MIN_ON_WW_TEMP_DIFF and
+        time.time() - startBefuellung >= _MIN_ON_REPEAT and
+        jData['getUmschaltventil'] == 'Heizen' and
+        ( float(jData['getTempKsoll']) - float(jData['getTempKist']) >= _MIN_ON_K_TEMP_DIFF or    # and heating is required
+          earlyStart <= datetime.datetime.now().time() <= earlyEnd ) ) :                          # or early pre-heating in the morning
       syslog.syslog('Start Befuellung : ' + str(jData))
       kSoll = float(jData['getTempKsoll'])
       befuellung()
